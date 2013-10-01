@@ -17,7 +17,7 @@ priorMeanPoint = Point2(0.0, 0.0); % prior at origin
 priorNoisePose = noiseModel.Diagonal.Sigmas([10; 10; 10]);
 priorNoisePoint = noiseModel.Diagonal.Sigmas([10; 10]);
 
-brNoise = noiseModel.Diagonal.Sigmas([0.001]);
+brNoise = noiseModel.Diagonal.Sigmas([0.0001]);
 noiseModels.range = noiseModel.Isotropic.Sigma(1, 1);
 
 %GPS_Noise = noiseModel.Isotropic.Sigma(100, 100);
@@ -26,7 +26,7 @@ initialEstimate = Values;
 
 %% Load image data
 our_path = 'Photos\';
-folder = 'FootBall';
+folder = 'BaseBall';
 anglesName = 'angles.csv';
 xyName = 'xy.csv';
 
@@ -73,18 +73,18 @@ for i = 1:size(angles,2)        %#ofcolums
 %     end
 end
 
-% for j = 1:size(angles,1)    %#ofrows
-%     i = 1;
-%     R = 1;
-%     angle = angles(j,i);
-%     if ~(isnan(angle))
-%         pointSymbol2= symbol('O',j);
-%         xoffset = xy(i,1) + cos(angle)*R;
-%         yoffset = xy(i,2) + sin(angle)*R;
-%         initialEstimate.insert(pointSymbol2, Point2(xoffset, yoffset));
-% 
-%     end
-% end
+for j = 1:size(angles,1)    %#ofrows
+    i = 1;
+    R = 1;
+    angle = angles(j,i);
+    if ~(isnan(angle))
+        pointSymbol2= symbol('O',j);
+        xoffset = xy(i,1) + cos(angle)*R;
+        yoffset = xy(i,2) + sin(angle)*R;
+        initialEstimate.insert(pointSymbol2, Point2(xoffset, yoffset));
+
+    end
+end
 
 % print
 graph.print(sprintf('\nFactor graph:\n'));
