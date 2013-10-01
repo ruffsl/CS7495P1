@@ -14,13 +14,13 @@ graph = NonlinearFactorGraph;
 %% Noise models
 priorMeanPose = Pose2(0.0, 0.0, 0.0); % prior at origin
 priorMeanPoint = Point2(0.0, 0.0); % prior at origin
-priorNoisePose = noiseModel.Diagonal.Sigmas([1000; 1000; 10000]);
-priorNoisePoint = noiseModel.Diagonal.Sigmas([1000; 1000]);
+priorNoisePose = noiseModel.Diagonal.Sigmas([10; 10; 10]);
+priorNoisePoint = noiseModel.Diagonal.Sigmas([10; 10]);
 
-brNoise = noiseModel.Diagonal.Sigmas([0.003]);
-noiseModels.range = noiseModel.Isotropic.Sigma(1, 0.01);
+brNoise = noiseModel.Diagonal.Sigmas([0.001]);
+noiseModels.range = noiseModel.Isotropic.Sigma(1, 1);
 
-GPS_Noise = noiseModel.Isotropic.Sigma(100, 100);
+%GPS_Noise = noiseModel.Isotropic.Sigma(100, 100);
 
 initialEstimate = Values;
 
@@ -32,8 +32,8 @@ xyName = 'xy.csv';
 
 angles = csvread(strcat(our_path, folder, '\', anglesName));
 angles = -angles;
-% xy =    csvread(strcat(our_path, folder, '\', xyName));
-xy = xytest;
+xy =    csvread(strcat(our_path, folder, '\', xyName));
+%xy = xytest;
 
 
 %% Build Factor Graph
@@ -45,7 +45,7 @@ for i = 1:size(angles,2)        %#ofcolums
     graph.add(PriorFactorPoint2(pointSymbol1, Point2(xy(i,1), xy(i,2)), priorNoisePoint));
     graph.add(RangeFactorPosePoint2(poseSymbol1, pointSymbol1, 0, noiseModels.range));
     
-    initialEstimate.insert(poseSymbol1, Pose2(xy(i,1), xy(i,2),  0.0));
+    initialEstimate.insert(poseSymbol1, Pose2(xy(i,1), xy(i,2),  0));
     initialEstimate.insert(pointSymbol1, Point2(xy(i,1), xy(i,2)));
     
     %Add point
@@ -73,6 +73,18 @@ for i = 1:size(angles,2)        %#ofcolums
 %     end
 end
 
+% for j = 1:size(angles,1)    %#ofrows
+%     i = 1;
+%     R = 1;
+%     angle = angles(j,i);
+%     if ~(isnan(angle))
+%         pointSymbol2= symbol('O',j);
+%         xoffset = xy(i,1) + cos(angle)*R;
+%         yoffset = xy(i,2) + sin(angle)*R;
+%         initialEstimate.insert(pointSymbol2, Point2(xoffset, yoffset));
+% 
+%     end
+% end
 
 % print
 graph.print(sprintf('\nFactor graph:\n'));
@@ -85,6 +97,7 @@ result.print(sprintf('\nFinal result:\n'));
 
 %% Plot Covariance Ellipses
 cla;hold on
+axis equal
 
 marginals = Marginals(graph, result);
 plot2DTrajectory(result, [], marginals);
