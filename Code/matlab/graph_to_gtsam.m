@@ -12,10 +12,11 @@ import gtsam.*
 graph = NonlinearFactorGraph;
 
 %% Noise models
-priorMean = Pose2(0.0, 0.0, 0.0); % prior at origin
-priorNoise = noiseModel.Diagonal.Sigmas([0.3; 0.3; 0.1]);
+priorMeanPose = Pose2(0.0, 0.0, 0.0); % prior at origin
+priorMeanPoint = Point2(0.0, 0.0); % prior at origin
+priorNoisePose = noiseModel.Diagonal.Sigmas([0.3; 0.3; 1000]);
+priorNoisePoint = noiseModel.Diagonal.Sigmas([0.3; 0.3]);
 
-degrees = pi/180;
 brNoise = noiseModel.Diagonal.Sigmas([0.01]);
 noiseModels.range = noiseModel.Isotropic.Sigma(1, 0.01);
 
@@ -24,33 +25,33 @@ GPS_Noise = noiseModel.Isotropic.Sigma(1, 1);
 initialEstimate = Values;
 
 %% Load image data
-our_path = '\\ad.gatech.edu\ecefs$\users\students\mobrien36\Profile\Desktop\Photos2\Photos\';
+our_path = 'Photos\';
 folder = 'BaseBall';
-AngleName = strcat(folder, 'Angle.csv');
-xyName = strcat(folder, 'xy.csv');
+anglesName = 'angles.csv';
+xyName = 'xy.csv';
 
-angles = csvread(strcat(our_path, folder, '\', AngleName));
-xy = csvread(strcat(our_path, folder, '\', xyName));
+angles = csvread(strcat(our_path, folder, '\', anglesName));
+xy =     csvread(strcat(our_path, folder, '\', xyName));
 
 
 %% Build Factor Graph
 for i = 1:size(angles,2)        %#ofcolums
     %Add a pose
-    poseSymbol1 = symbol('x',i);
-    pointSymbol1 = symbol('l',i);
-    graph.add(PriorFactorPose2(poseSymbol1, priorMean, priorNoise)); %!!!!!!!!!!!!!!!
-    graph.add(PriorFactorPoint2(pointSymbol1, priorMean, priorNoise));
+    poseSymbol1 = symbol('X',i);
+    pointSymbol1 = symbol('O',i);
+    graph.add(PriorFactorPose2(poseSymbol1, Pose2(xy(i,1), xy(i,2),  0.0), priorNoisePose)); %!!!!!!!!!!!!!!!
+    graph.add(PriorFactorPoint2(pointSymbol1, Point2(xy(i,1), xy(i,2)), priorNoisePoint));
     graph.add(RangeFactorPosePoint2(poseSymbol1, pointSymbol1, 0, noiseModels.range));
     
-    %initialEstimate.insert(poseSymbol1, Pose2(xy(i,1), xy(i,2),  0.0));
-    %initialEstimate.insert(pointSymbol1, Point2(xy(i,1), xy(i,2)));
+    initialEstimate.insert(poseSymbol1, Pose2(xy(i,1), xy(i,2),  0.0));
+    initialEstimate.insert(pointSymbol1, Point2(xy(i,1), xy(i,2)));
     
     %Add point
     %Initialize both
     for j = 1:size(angles,1)    %#ofrows
         angle = angles(j,i);
         if ~(isnan(angle))
-            pointSymbol2= symbol('l',j)
+            pointSymbol2= symbol('O',j);
             graph.add(BearingFactor2D(poseSymbol1, pointSymbol2, Rot2(angle), brNoise));
 
         end
@@ -71,6 +72,18 @@ for i = 1:size(angles,2)        %#ofcolums
 end
 
 
-
+% print
 graph.print(sprintf('\nFactor graph:\n'));
-    
+
+
+%% Optimize using Levenberg-Marquardt optimization with an ordering from colamd
+optimizer = LevenbergMarquardtOptimizer(graph, initialEstimate);
+result = optimizer.optimizeSafely();
+result.print(sprintf('\nFinal result:\n'));
+
+%% Plot Covariance Ellipses
+cla;hold on
+
+marginals = Marginals(graph, result);
+plot2DTrajectory(result, [], marginals);
+plot2DPoints(result, 'b', marginals);
