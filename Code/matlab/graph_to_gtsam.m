@@ -1,5 +1,5 @@
 clc
-clear
+%clear
 import gtsam.*
 
 %% Assumptions
@@ -14,24 +14,26 @@ graph = NonlinearFactorGraph;
 %% Noise models
 priorMeanPose = Pose2(0.0, 0.0, 0.0); % prior at origin
 priorMeanPoint = Point2(0.0, 0.0); % prior at origin
-priorNoisePose = noiseModel.Diagonal.Sigmas([0.3; 0.3; 1000]);
-priorNoisePoint = noiseModel.Diagonal.Sigmas([0.3; 0.3]);
+priorNoisePose = noiseModel.Diagonal.Sigmas([1000; 1000; 10000]);
+priorNoisePoint = noiseModel.Diagonal.Sigmas([1000; 1000]);
 
-brNoise = noiseModel.Diagonal.Sigmas([0.01]);
+brNoise = noiseModel.Diagonal.Sigmas([0.003]);
 noiseModels.range = noiseModel.Isotropic.Sigma(1, 0.01);
 
-GPS_Noise = noiseModel.Isotropic.Sigma(1, 1);
+GPS_Noise = noiseModel.Isotropic.Sigma(100, 100);
 
 initialEstimate = Values;
 
 %% Load image data
 our_path = 'Photos\';
-folder = 'BaseBall';
+folder = 'FootBall';
 anglesName = 'angles.csv';
 xyName = 'xy.csv';
 
 angles = csvread(strcat(our_path, folder, '\', anglesName));
-xy =     csvread(strcat(our_path, folder, '\', xyName));
+angles = -angles;
+% xy =    csvread(strcat(our_path, folder, '\', xyName));
+xy = xytest;
 
 
 %% Build Factor Graph
